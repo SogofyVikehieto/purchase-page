@@ -1,4 +1,4 @@
-import { Box, Typography, Container, TextField } from "@mui/material";
+import { Box, Typography, Container, TextField, Button, createTheme } from "@mui/material";
 import React, { useEffect, useState } from "react";
 
 const data = [
@@ -54,6 +54,16 @@ function Purchase() {
   const [searchFilter, setSearchFilter] = useState("");
   const [total, setTotal] = useState(0);
 
+  const {palette}=createTheme();
+  const {augmentColor}=palette;
+  const createColor = (mainColor)=>augmentColor({color:{main:mainColor}})
+
+  const theme = createTheme({
+    palette:{
+      bogoColorLight:createColor("#7986cb"),
+      bogoColorDark:createColor("#1a237e")
+    }
+  })
   const updateQuantity = (amount, id) => {
     setProducts((products) => {
       let obj = [...products];
@@ -76,13 +86,14 @@ function Purchase() {
       <Box>
         <Typography variant="h4">Purchase Order</Typography>
       </Box>
-      <Box>
-        <Typography variant="body1"> Ganesh stores</Typography>
-        <Typography variant="body2">Rs. {total}</Typography>
+      <Box sx={{marginBottom:"6px"}}>
+       <Typography variant="body1">Outlet: Ganesh Stores </Typography>
+        <Typography variant="body2">Total Amount: {`\u20B9`} {total}</Typography>
       </Box>
       <Box>
         <TextField
           style={{ width: "100%", mb: 2, textAlign: "center" }}
+          inputProps={{sx:{height:{lg:20,md:20,sm:10,xs:12}}}}
           value={searchFilter}
           onChange={(e) => setSearchFilter(e.target.value)}
           variant="filled"
@@ -110,22 +121,29 @@ function Purchase() {
               }}
             >
               <Box>
-                <Typography sx={{ textAlign: "left" }} variant="h6">
+                <Typography sx={{ textAlign: "left",fontSize:{md:18,sm:16,xs:13}}} variant="h6">
                   {product.productname}
                 </Typography>
-                <Typography sx={{ textAlign: "left" }} variant="body1">
+                <Typography sx={{ textAlign: "left",fontSize:{md:18,sm:16,xs:13} }} variant="body1">
                   {" "}
-                  Rs. {product.price}{" "}
+                Price: {`\u20B9`} {product.price}{" "}
                 </Typography>
               </Box>
-              <Box>
-                Qty:{" "}
+              <Box variant="body1">
+                Qty: {" "}
                 <TextField
                   value={product.quantity === 0 ? "" : product.quantity}
                   type="number"
-                  onChange={(e) =>
-                    updateQuantity(e.target.value, product.productid)
-                  }
+                  onChange={(e)=>{
+                    if (e.target.value.includes("-")) return;
+            if (
+              e.target.value == "" ||
+              (Number.isInteger(parseInt(e.target.value)) && parseInt(e.target.value) > 0)
+            )
+              updateQuantity(e.target.value, product.productid);
+            else return;
+
+                  }}
                   sx={{
                     padding: "0px 5px",
                     width: "50px",
@@ -135,12 +153,14 @@ function Purchase() {
                       },
                     },
                   }}
+                  style={{backgroundColor:"#8c9eff"}}
                   variant="standard"
                 ></TextField>
               </Box>
             </Box>
           ))}
       </Box>
+      <Button variant="contained" style={{backgroundColor:"#6200ea",marginTop:"10px"}} sx={{transform:"none"}}>Place Order</Button>
     </Container>
   );
 }
