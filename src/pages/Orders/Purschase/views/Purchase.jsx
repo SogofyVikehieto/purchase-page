@@ -6,10 +6,11 @@ import { saveOrder } from "../helpers/purchaseHelper";
 import useFormDetails from "../helpers/useFormDetails";
 import useProducts from "../helpers/useProducts";
 
-function Purchase({ setSuccessData }) {
+function Purchase({ setSuccessData, setFormData }) {
   const { formId } = useParams();
   const navigate = useNavigate();
   const {
+    formDetails,
     formDetails: { distributorid, distributorname, retailername },
     error: formError,
   } = useFormDetails({ formId });
@@ -38,6 +39,10 @@ function Purchase({ setSuccessData }) {
     });
     setCart({ price: Number(price).toFixed(2), items, products: cartProducts });
   }, [products]);
+
+  useEffect(() => {
+    setFormData(formDetails);
+  }, [formDetails]);
 
   const addOrder = async () => {
     setError("");

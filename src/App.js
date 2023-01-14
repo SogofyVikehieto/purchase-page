@@ -6,17 +6,23 @@ import Success from "./pages/Orders/Purschase/views/Success";
 
 function App() {
   const [successData, setSuccessData] = useState(null);
+  const [formData, setFormData] = useState({});
   return (
     <div className="App">
       <BrowserRouter>
         <Routes>
           <Route
             path="/success"
-            element={<Success successData={successData} />}
+            element={<Success successData={successData} formData={formData} />}
           />
           <Route
             path="/:formId"
-            element={<Purchase setSuccessData={setSuccessData} />}
+            element={
+              <Purchase
+                setSuccessData={setSuccessData}
+                setFormData={setFormData}
+              />
+            }
           />
         </Routes>
       </BrowserRouter>
