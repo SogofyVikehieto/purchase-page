@@ -9,14 +9,15 @@ const useProducts = ({
   pageSize = 500,
 }) => {
   const [products, setProducts] = useState([]);
-  const [error, setError] = useState();
+  const [error, setError] = useState("");
 
   useEffect(() => {
     getProducts();
-  }, [distributorId]);
+  }, [distributorId, categoryId, searchText]);
 
-  const getProducts = async () => {
+  async function getProducts() {
     if (!distributorId || !categoryId || !searchText) return;
+    setError("");
     axiosInstance
       .post("/product", {
         user_id: distributorId,
@@ -26,13 +27,14 @@ const useProducts = ({
         page_size: pageSize,
       })
       .then((res) => {
-        const products = res.data.data;
+        let products = res.data.data;
+        products = products.map((product) => ({ ...product, quantity: 0 }));
         setProducts(products);
       })
       .catch((err) => {
         setError(err.response?.data?.message || err.message);
       });
-  };
+  }
 
   const updateQuantity = (amount, id) => {
     setProducts((products) => {

@@ -1,15 +1,17 @@
-import { Box, Typography, Container, TextField } from "@mui/material";
+import { Box, Typography, Container, TextField, Button } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import { useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { saveOrder } from "../helpers/purchaseHelper";
 import useFormDetails from "../helpers/useFormDetails";
 import useProducts from "../helpers/useProducts";
 
-function Purchase() {
+function Purchase({ setSuccessData }) {
   const { formId } = useParams();
+  const navigate = useNavigate();
   const {
     formDetails: { distributorid, distributorname, retailername },
-    error,
+    error: formError,
   } = useFormDetails({ formId });
   const {
     products,
@@ -21,6 +23,8 @@ function Purchase() {
     searchText: "ALL",
   });
   const [searchFilter, setSearchFilter] = useState("");
+  const [discount, setDiscount] = useState(0);
+  const [error, setError] = useState("");
   const [cart, setCart] = useState({ price: 0, items: 0, products: 0 });
 
   useEffect(() => {
@@ -34,6 +38,32 @@ function Purchase() {
     });
     setCart({ price: Number(price).toFixed(2), items, products: cartProducts });
   }, [products]);
+
+  const addOrder = async () => {
+    setError("");
+    const orderProducts = products.filter(
+      (product) => product.quantity && product.quantity > 0
+    );
+    try {
+      const res = await saveOrder(
+        formId,
+        orderProducts.length,
+        cart.price,
+        "cash",
+        discount,
+        cart.price - (cart.price * discount) / 100,
+        orderProducts
+      );
+      if (!res.error) {
+        setSuccessData(res.data);
+        navigate("/success");
+        return;
+      }
+      setError(res.error);
+    } catch (error) {
+      setError(error.response?.data?.message || error.message);
+    }
+  };
 
   const filteredProducts = useMemo(
     () =>
@@ -51,7 +81,7 @@ function Purchase() {
         <Typography variant="h4">Purchase Order</Typography>
       </Box>
       <Box>
-        <Typography>{error}</Typography>
+        <Typography>{formError}</Typography>
         <Typography>{productsError}</Typography>
         <Typography variant="body1">Supplier: {distributorname}</Typography>
         <Typography variant="body1">Retailer: {retailername}</Typography>
@@ -119,6 +149,9 @@ function Purchase() {
           </Box>
         ))}
       </Box>
+      <Button variant="contained" onClick={addOrder}>
+        Place order
+      </Button>
     </Container>
   );
 }
