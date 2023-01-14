@@ -1,5 +1,5 @@
 import { Box, Typography, Container, TextField, Button } from "@mui/material";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { saveOrder } from "../helpers/purchaseHelper";
@@ -28,6 +28,8 @@ function Purchase({ setSuccessData, setFormData }) {
   const [error, setError] = useState("");
   const [cart, setCart] = useState({ price: 0, items: 0, products: 0 });
 
+  const submitButton = useRef();
+
   useEffect(() => {
     let price = 0;
     let items = 0;
@@ -49,6 +51,11 @@ function Purchase({ setSuccessData, setFormData }) {
     const orderProducts = products.filter(
       (product) => product.quantity && product.quantity > 0
     );
+    if (!orderProducts.length > 0) {
+      setError("Your cart is empty. Please add products to place an order");
+      return;
+    }
+    submitButton.current.disabled = true;
     try {
       const res = await saveOrder(
         formId,
@@ -67,6 +74,8 @@ function Purchase({ setSuccessData, setFormData }) {
       setError(res.error);
     } catch (error) {
       setError(error.response?.data?.message || error.message);
+    } finally {
+      submitButton.current.disabled = false;
     }
   };
 
@@ -85,9 +94,10 @@ function Purchase({ setSuccessData, setFormData }) {
       <Box>
         <Typography variant="h4">Purchase Order</Typography>
       </Box>
-      <Box>
-        <Typography>{formError}</Typography>
-        <Typography>{productsError}</Typography>
+      <Box style={{ textAlign: "left", marginBottom: "2%" }}>
+        {formError && <Typography>{formError}</Typography>}
+        {productsError && <Typography>{productsError}</Typography>}
+
         <Typography variant="body1">Supplier: {distributorname}</Typography>
         <Typography variant="body1">Retailer: {retailername}</Typography>
         <Typography>Items: {cart.items}</Typography>
@@ -96,10 +106,17 @@ function Purchase({ setSuccessData, setFormData }) {
       </Box>
       <Box>
         <TextField
-          style={{ width: "100%", mb: 2, textAlign: "center" }}
+          size="small"
+          style={{
+            width: "100%",
+            mb: 2,
+            textAlign: "center",
+            backgroundColor: "#FBFFFF",
+            marginBottom: "2%",
+          }}
           value={searchFilter}
           onChange={(e) => setSearchFilter(e.target.value)}
-          variant="filled"
+          variant="outlined"
           label="Search Products"
         />
       </Box>
@@ -116,14 +133,14 @@ function Purchase({ setSuccessData, setFormData }) {
             }}
           >
             <Box>
-              <Typography sx={{ textAlign: "left" }} variant="h6">
+              <Typography sx={{ textAlign: "left" }} variant="body1">
                 {product.productname}
               </Typography>
-              <Typography sx={{ textAlign: "left" }} variant="body1">
+              <Typography sx={{ textAlign: "left" }} variant="body2">
                 {" "}
                 Rs. {Number(product.price)}{" "}
               </Typography>
-              <Typography sx={{ textAlign: "left" }} variant="body1">
+              <Typography sx={{ textAlign: "left" }} variant="body2">
                 {" "}
                 Rs.{" "}
                 {Number(
@@ -131,7 +148,13 @@ function Purchase({ setSuccessData, setFormData }) {
                 ).toFixed(2)}{" "}
               </Typography>
             </Box>
-            <Box>
+            <Box
+              component="div"
+              style={{
+                display: "flex",
+                alignItems: "end",
+              }}
+            >
               Qty:{" "}
               <TextField
                 value={product.quantity === 0 ? "" : product.quantity}
@@ -140,11 +163,13 @@ function Purchase({ setSuccessData, setFormData }) {
                   updateQuantity(e.target.value, product.productid)
                 }
                 sx={{
-                  padding: "0px 5px",
-                  width: "50px",
+                  padding: "3px 5px",
+                  width: "60px",
                   "& .MuiInputBase-root": {
                     "& input": {
                       textAlign: "center",
+                      fontSize: 16,
+                      backgroundColor: "#C8DBFF",
                     },
                   },
                 }}
@@ -154,7 +179,13 @@ function Purchase({ setSuccessData, setFormData }) {
           </Box>
         ))}
       </Box>
-      <Button variant="contained" onClick={addOrder}>
+      {error && <Typography>{error}</Typography>}
+      <Button
+        ref={submitButton}
+        variant="contained"
+        style={{ backgroundColor: "#1629cc" }}
+        onClick={addOrder}
+      >
         Place order
       </Button>
     </Container>
