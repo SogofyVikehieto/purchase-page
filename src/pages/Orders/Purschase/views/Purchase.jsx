@@ -1,166 +1,193 @@
-import { Box, Typography, Container, TextField, Button, createTheme } from "@mui/material";
-import React, { useEffect, useState } from "react";
+import { Box, Typography, Container, TextField, Button } from "@mui/material";
+import React, { useEffect, useState, useRef } from "react";
+import { useMemo } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { saveOrder } from "../helpers/purchaseHelper";
+import useFormDetails from "../helpers/useFormDetails";
+import useProducts from "../helpers/useProducts";
 
-const data = [
-  {
-    discount: 0,
-    manufacturer: null,
-    price: 88.14,
-    productid: "22",
-    productname: "Apple Cider Vinegar (490 Ml) G",
-    quantity: "5",
-    totalpages: "36",
-  },
-  {
-    discount: 0,
-    manufacturer: null,
-    price: 88.14,
-    productid: "23",
-    productname: "Apple Cider Vinegar (500ml)",
-    quantity: "5",
-    totalpages: "36",
-  },
-  {
-    discount: 0,
-    manufacturer: null,
-    price: 118.64,
-    productid: "24",
-    productname: "BADAM ESSENCE 10*20ML",
-    quantity: "5",
-    totalpages: "36",
-  },
-  {
-    discount: 0,
-    manufacturer: null,
-    price: 158.63,
-    productid: "25",
-    productname: "BADAM MILK MIX10*20 ML",
-    quantity: "3",
-    totalpages: "36",
-  },
-  {
-    discount: 0,
-    manufacturer: null,
-    price: 111.61,
-    productid: "26",
-    productname: "Bakers Barbeque Sauce(500 )",
-    quantity: 30,
-    totalpages: "36",
-  },
-];
-
-function Purchase() {
-  const [products, setProducts] = useState(data);
+function Purchase({ setSuccessData, setFormData }) {
+  const { formId } = useParams();
+  const navigate = useNavigate();
+  const {
+    formDetails,
+    formDetails: { distributorid, distributorname, retailername },
+    error: formError,
+  } = useFormDetails({ formId });
+  const {
+    products,
+    error: productsError,
+    updateQuantity,
+  } = useProducts({
+    distributorId: distributorid,
+    categoryId: "0",
+    searchText: "ALL",
+  });
   const [searchFilter, setSearchFilter] = useState("");
-  const [total, setTotal] = useState(0);
+  const [discount, setDiscount] = useState(0);
+  const [error, setError] = useState("");
+  const [cart, setCart] = useState({ price: 0, items: 0, products: 0 });
 
-  const {palette}=createTheme();
-  const {augmentColor}=palette;
-  const createColor = (mainColor)=>augmentColor({color:{main:mainColor}})
-
-  const theme = createTheme({
-    palette:{
-      bogoColorLight:createColor("#7986cb"),
-      bogoColorDark:createColor("#1a237e")
-    }
-  })
-  const updateQuantity = (amount, id) => {
-    setProducts((products) => {
-      let obj = [...products];
-      let index = obj.findIndex((item) => item.productid === id);
-      obj[index].quantity = parseInt(amount || 0);
-      return obj;
-    });
-  };
+  const submitButton = useRef();
 
   useEffect(() => {
-    let total = 0;
+    let price = 0;
+    let items = 0;
+    let cartProducts = 0;
     products.forEach((product) => {
-      total += product.quantity * product.price;
+      price += (product.quantity || 0) * product.price;
+      items += product.quantity || 0;
+      cartProducts += product.quantity ? 1 : 0;
     });
-    setTotal(parseFloat(total).toFixed(2));
+    setCart({ price: Number(price).toFixed(2), items, products: cartProducts });
   }, [products]);
+
+  useEffect(() => {
+    setFormData(formDetails);
+  }, [formDetails]);
+
+  const addOrder = async () => {
+    setError("");
+    const orderProducts = products.filter(
+      (product) => product.quantity && product.quantity > 0
+    );
+    if (!orderProducts.length > 0) {
+      setError("Your cart is empty. Please add products to place an order");
+      return;
+    }
+    submitButton.current.disabled = true;
+    try {
+      const res = await saveOrder(
+        formId,
+        orderProducts.length,
+        cart.price,
+        "cash",
+        discount,
+        cart.price - (cart.price * discount) / 100,
+        orderProducts
+      );
+      if (!res.error) {
+        setSuccessData(res.data);
+        navigate("/success");
+        return;
+      }
+      setError(res.error);
+    } catch (error) {
+      setError(error.response?.data?.message || error.message);
+    } finally {
+      submitButton.current.disabled = false;
+    }
+  };
+
+  const filteredProducts = useMemo(
+    () =>
+      products.filter(
+        (product) =>
+          searchFilter === "" ||
+          product.productname.toLowerCase().includes(searchFilter.toLowerCase())
+      ),
+    [products, searchFilter]
+  );
 
   return (
     <Container>
       <Box>
         <Typography variant="h4">Purchase Order</Typography>
       </Box>
-      <Box sx={{marginBottom:"6px"}}>
-       <Typography variant="body1">Outlet: Ganesh Stores </Typography>
-        <Typography variant="body2">Total Amount: {`\u20B9`} {total}</Typography>
+      <Box style={{ textAlign: "left", marginBottom: "2%" }}>
+        {formError && <Typography>{formError}</Typography>}
+        {productsError && <Typography>{productsError}</Typography>}
+
+        <Typography variant="body1">Supplier: {distributorname}</Typography>
+        <Typography variant="body1">Retailer: {retailername}</Typography>
+        <Typography>Items: {cart.items}</Typography>
+        <Typography>Products: {cart.products}</Typography>
+        <Typography variant="body2">Rs. {cart.price}</Typography>
       </Box>
       <Box>
         <TextField
-          style={{ width: "100%", mb: 2, textAlign: "center" }}
-          inputProps={{sx:{height:{lg:20,md:20,sm:10,xs:12}}}}
+          size="small"
+          style={{
+            width: "100%",
+            mb: 2,
+            textAlign: "center",
+            backgroundColor: "#FBFFFF",
+            marginBottom: "2%",
+          }}
           value={searchFilter}
           onChange={(e) => setSearchFilter(e.target.value)}
-          variant="filled"
+          variant="outlined"
           label="Search Products"
         />
       </Box>
       <Box>
-        {products
-          .filter(
-            (product) =>
-              searchFilter === "" ||
-              product.productname
-                .toLowerCase()
-                .includes(searchFilter.toLowerCase())
-          )
-          .map((product, idx) => (
+        {filteredProducts.map((product, idx) => (
+          <Box
+            key={idx}
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              padding: "5px",
+              marginBottom: "10px",
+              borderBottom: "1px solid #1b5ae3",
+            }}
+          >
+            <Box>
+              <Typography sx={{ textAlign: "left" }} variant="body1">
+                {product.productname}
+              </Typography>
+              <Typography sx={{ textAlign: "left" }} variant="body2">
+                {" "}
+                Rs. {Number(product.price)}{" "}
+              </Typography>
+              <Typography sx={{ textAlign: "left" }} variant="body2">
+                {" "}
+                Rs.{" "}
+                {Number(
+                  Number(product.price).toFixed(2) * (product.quantity || 0)
+                ).toFixed(2)}{" "}
+              </Typography>
+            </Box>
             <Box
-              key={idx}
-              sx={{
+              component="div"
+              style={{
                 display: "flex",
-                justifyContent: "space-between",
-                padding: "5px",
-                marginBottom: "10px",
-                borderBottom: "1px solid #1b5ae3",
+                alignItems: "end",
               }}
             >
-              <Box>
-                <Typography sx={{ textAlign: "left",fontSize:{md:18,sm:16,xs:13}}} variant="h6">
-                  {product.productname}
-                </Typography>
-                <Typography sx={{ textAlign: "left",fontSize:{md:18,sm:16,xs:13} }} variant="body1">
-                  {" "}
-                Price: {`\u20B9`} {product.price}{" "}
-                </Typography>
-              </Box>
-              <Box variant="body1">
-                Qty: {" "}
-                <TextField
-                  value={product.quantity === 0 ? "" : product.quantity}
-                  type="number"
-                  onChange={(e)=>{
-                    if (e.target.value.includes("-")) return;
-            if (
-              e.target.value == "" ||
-              (Number.isInteger(parseInt(e.target.value)) && parseInt(e.target.value) > 0)
-            )
-              updateQuantity(e.target.value, product.productid);
-            else return;
-
-                  }}
-                  sx={{
-                    padding: "0px 5px",
-                    width: "50px",
-                    "& .MuiInputBase-root": {
-                      "& input": {
-                        textAlign: "center",
-                      },
+              Qty:{" "}
+              <TextField
+                value={product.quantity === 0 ? "" : product.quantity}
+                type="number"
+                onChange={(e) =>
+                  updateQuantity(e.target.value, product.productid)
+                }
+                sx={{
+                  padding: "3px 5px",
+                  width: "60px",
+                  "& .MuiInputBase-root": {
+                    "& input": {
+                      textAlign: "center",
+                      fontSize: 16,
+                      backgroundColor: "#C8DBFF",
                     },
-                  }}
-                  style={{backgroundColor:"#8c9eff"}}
-                  variant="standard"
-                ></TextField>
-              </Box>
+                  },
+                }}
+                variant="standard"
+              ></TextField>
             </Box>
-          ))}
+          </Box>
+        ))}
       </Box>
-      <Button variant="contained" style={{backgroundColor:"#6200ea",marginTop:"10px"}} sx={{transform:"none"}}>Place Order</Button>
+      {error && <Typography>{error}</Typography>}
+      <Button
+        ref={submitButton}
+        variant="contained"
+        style={{ backgroundColor: "#1629cc" }}
+        onClick={addOrder}
+      >
+        Place order
+      </Button>
     </Container>
   );
 }
