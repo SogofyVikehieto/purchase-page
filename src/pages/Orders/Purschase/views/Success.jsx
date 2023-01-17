@@ -35,10 +35,10 @@ function Success({ successData, formData }) {
                 primary={
                   <>
                     <Typography component="span" variant="body1">
-                      Order Date :{" "}
+                      Order ID:{" "}
                     </Typography>
                     <Typography component="span" variant="body1">
-                      {new Date().toDateString()}
+                      {successData[0]?.orderid}
                     </Typography>
                   </>
                 }
@@ -55,9 +55,9 @@ function Success({ successData, formData }) {
                     {formData?.distributorname}
                     <br />
                     <Typography component="span" variant="body1">
-                      Order ID :{" "}
+                      Order Date :{" "}
                     </Typography>
-                    {successData[0]?.orderid}
+                    {new Date().toDateString()}
                     <br />
                   </>
                 }

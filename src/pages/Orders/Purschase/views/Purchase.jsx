@@ -120,7 +120,7 @@ function Purchase({ setSuccessData, setFormData }) {
           label="Search Products"
         />
       </Box>
-      <Box>
+      <Box style={{ overflowY: "scroll", maxHeight: "60vh" }}>
         {filteredProducts.map((product, idx) => (
           <Box
             key={idx}
