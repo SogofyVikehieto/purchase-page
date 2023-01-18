@@ -5,10 +5,12 @@ import { useNavigate, useParams } from "react-router-dom";
 import { saveOrder } from "../helpers/purchaseHelper";
 import useFormDetails from "../helpers/useFormDetails";
 import useProducts from "../helpers/useProducts";
+import { useLoadingContext } from "../../../../contexts/LoadingContext";
 
 function Purchase({ setSuccessData, setFormData }) {
   const { formId } = useParams();
   const navigate = useNavigate();
+  const { setIsLoading } = useLoadingContext();
   const {
     formDetails,
     formDetails: { distributorid, distributorname, retailername },
@@ -48,6 +50,7 @@ function Purchase({ setSuccessData, setFormData }) {
 
   const addOrder = async () => {
     setError("");
+    setIsLoading("Placing order");
     const orderProducts = products.filter(
       (product) => product.quantity && product.quantity > 0
     );
@@ -76,6 +79,7 @@ function Purchase({ setSuccessData, setFormData }) {
       setError(error.response?.data?.message || error.message);
     } finally {
       submitButton.current.disabled = false;
+      setIsLoading("");
     }
   };
 
