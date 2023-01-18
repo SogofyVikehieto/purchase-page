@@ -6,7 +6,7 @@ const { createContext } = require("react");
 const LoadingContext = createContext();
 
 export const LoadingContextProvider = ({ children }) => {
-  const [loading, setLoading] = useState("Loading...");
+  const [loading, setLoading] = useState("");
 
   const setIsLoading = (value) => {
     setLoading(value);
