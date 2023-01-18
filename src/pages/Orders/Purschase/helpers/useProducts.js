@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axiosInstance from "../../../../constants/axiosInstance";
+import { useLoadingContext } from "../../../../contexts/LoadingContext";
 
 const useProducts = ({
   distributorId,
@@ -8,6 +9,7 @@ const useProducts = ({
   pageNumber = 1,
   pageSize = 500,
 }) => {
+  const { setIsLoading } = useLoadingContext();
   const [products, setProducts] = useState([]);
   const [error, setError] = useState("");
 
@@ -17,6 +19,7 @@ const useProducts = ({
 
   async function getProducts() {
     if (!distributorId || !categoryId || !searchText) return;
+    setIsLoading("Loading products");
     setError("");
     axiosInstance
       .post("/product", {
@@ -33,6 +36,9 @@ const useProducts = ({
       })
       .catch((err) => {
         setError(err.response?.data?.message || err.message);
+      })
+      .finally(() => {
+        setIsLoading("");
       });
   }
 
